@@ -1,1 +1,27 @@
+    public void signup(RegisterUserDto input) {
+        if (!PasswordValidator.isValid(input.getPassword())) {
+            throw new BadCredentialsException("Password must be at least 8 characters long, include uppercase, lowercase, a digit, and a special character.");
+        }
+
+        User user = new User(input.getFullName(), input.getEmail(), passwordEncoder.encode(input.getPassword()), passwordExpiration());
+        Role role = roleRepository.findByName("USER").orElseThrow();
+        user.getRoles().add(role);
+
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException _) {
+            throw new EmailExistsException("The email " + input.getEmail() + " is already registered.");
+        }
+    }
+
+    public User authenticate(LoginUserDto input) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        input.getEmail(),
+                        input.getPassword()
+                )
+        );
+
+        return userRepository.findByEmail(input.getEmail()).orElseThrow();
+    }
 
